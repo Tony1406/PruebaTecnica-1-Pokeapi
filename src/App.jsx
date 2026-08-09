@@ -1,122 +1,117 @@
+import { useEffect, useState } from 'react'
 import './App.css'
+import SearchBar from './components/SearchBar'
+import PokemonCard from './components/PokemonCard'
+import PokemonDetail from './components/PokemonDetail'
+import Pagination from './components/Pagination'
+
+const LIMIT = 4
+const COLORES = ["primary", "danger", "warning", "success"]
 
 function App() {
 
-  fetch("https://pokeapi.co/api/v2/pokemon")
-    .then((Response) => {
-      return Response.json()
-    })
-    .then((json) => {
-      console.log(json)
-    })
-    .catch((error) => {
-      console.log(error, "error search");
-    })
+  const [pokemonList, setPokemonList] = useState([])
+  const [selectedPokemon, setSelectedPokemon] = useState(null)
+  const [offset, setOffset] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [notFound, setNotFound] = useState(false)
 
-  const mostrarPokemon = (e) => {
-    alert('¡Aqui tienes tu pokemon!');
-    e.preventDefault()
-  };
+  const cargarListado = (offsetActual) => {
+    setLoading(true)
+    setNotFound(false)
+
+    fetch("https://pokeapi.co/api/v2/pokemon?limit=" + LIMIT + "&offset=" + offsetActual)
+      .then((Response) => {
+        return Response.json()
+      })
+      .then((json) => {
+        const promesas = json.results.map((pokemon) => {
+          return fetch(pokemon.url).then((Response) => Response.json())
+        })
+        return Promise.all(promesas)
+      })
+      .then((listaCompleta) => {
+        setPokemonList(listaCompleta)
+        setLoading(false)
+      })
+      .catch((error) => {
+        console.log(error, "error search")
+        setLoading(false)
+      })
+  }
+
+  useEffect(() => {
+    cargarListado(offset)
+  }, [offset])
+
+  const buscarPokemon = (nombre) => {
+    setLoading(true)
+    setNotFound(false)
+
+    fetch("https://pokeapi.co/api/v2/pokemon/" + nombre.toLowerCase())
+      .then((Response) => {
+        if (!Response.ok) {
+          throw new Error("No encontrado")
+        }
+        return Response.json()
+      })
+      .then((pokemon) => {
+        setPokemonList([pokemon])
+        setSelectedPokemon(pokemon)
+        setLoading(false)
+      })
+      .catch((error) => {
+        console.log(error, "error search")
+        setNotFound(true)
+        setPokemonList([])
+        setLoading(false)
+      })
+  }
 
   const mostrarSiguiente = () => {
-    alert("Has dado click a siguente")
+    setOffset(offset + LIMIT)
   }
 
   const mostrarPrevio = () => {
-    alert("Has dado click a siguente")
+    if (offset - LIMIT >= 0) {
+      setOffset(offset - LIMIT)
+    }
   }
 
   return (
-    <>
-      <div className='container pt-5'>
+    <div className="app">
 
-        <h1 className='mb-4 text-light text-center'>
-          Listado de Pokemón
-        </h1>
+      <h1 className="app-title">
+        Listado de Pokemón
+      </h1>
 
-        <form onSubmit={mostrarPokemon}>
-          <div className="input-group mb-3">
-            <span className="input-group-text" id="basic-addon1">🔍</span>
-            <input type="text" className="form-control" placeholder="Busca tu Pokemón" aria-label="Username" aria-describedby="basic-addon1" />
-          </div>
-        </form>
+      <SearchBar onBuscar={buscarPokemon} />
 
-        <h2 className='pt-4 mb-5 text-light'>
-          Resultados
-        </h2>
+      <h2 className="section-title">
+        Resultados
+      </h2>
 
-        <div className="row">
-          <div className="col">
-            <div className="card tamañocarta forma border border-3 bg-primary">
-              <div className="card-body text-center">
-                <img src='https://www.latercera.com/resizer/j-ZtEKzoY5fUQtLLGOVNBOpG7Aw=/arc-anglerfish-arc2-prod-copesa/public/6O3E6FX56FCYFGW5NZFOKYGNY4.jpg' className='img border border-dark'></img>
-                <h5 className="card-title text-center mt-3 mb-2">#1</h5>
-                <h5 className="card-title text-center mt-3 mb-2">Nombre</h5>
-              </div>
-            </div>
+      {loading ? <p className="status-message">Cargando...</p> : null}
+      {notFound ? <p className="status-message">No se encontró ese pokemón.</p> : null}
 
-            <div className="mt-4  card tamañocarta forma border border-3 bg-danger">
-              <div className="card-body text-center">
-                <img src='https://www.latercera.com/resizer/j-ZtEKzoY5fUQtLLGOVNBOpG7Aw=/arc-anglerfish-arc2-prod-copesa/public/6O3E6FX56FCYFGW5NZFOKYGNY4.jpg' className='img border border-dark'></img>
-                <h5 className="card-title text-center mt-3 mb-2">#2</h5>
-                <h5 className="card-title text-center mt-3 mb-2">Nombre</h5>
-              </div>
-            </div>
-          </div>
-
-          <div className="col">
-            <div className='mb-5'>
-              <div className="card tamañocarta forma border border-3 bg-warning">
-                <div className="card-body text-center">
-                  <img src='https://www.latercera.com/resizer/j-ZtEKzoY5fUQtLLGOVNBOpG7Aw=/arc-anglerfish-arc2-prod-copesa/public/6O3E6FX56FCYFGW5NZFOKYGNY4.jpg' className='img border border-dark'></img>
-                  <h5 className="card-title text-center mt-3 mb-2">#3</h5>
-                  <h5 className="card-title text-center mt-3 mb-2">Nombre</h5>
-                </div>
-              </div>
-
-              <div className="mt-4 card tamañocarta forma border border-3 bg-success">
-                <div className="card-body text-center">
-                  <img src='https://www.latercera.com/resizer/j-ZtEKzoY5fUQtLLGOVNBOpG7Aw=/arc-anglerfish-arc2-prod-copesa/public/6O3E6FX56FCYFGW5NZFOKYGNY4.jpg' className='img border border-dark'></img>
-                  <h5 className="card-title text-center mt-3 mb-2">#4</h5>
-                  <h5 className="card-title text-center mt-3 mb-2">Nombre</h5>
-                </div>
-              </div>
-            </div>
-
-          </div>
-          <div className="col">
-            <div className="card formabusqueda border border-3 bg-info mb-5">
-              <div className="card-body">
-                <div className='text-center'>
-                  <img src='https://www.latercera.com/resizer/j-ZtEKzoY5fUQtLLGOVNBOpG7Aw=/arc-anglerfish-arc2-prod-copesa/public/6O3E6FX56FCYFGW5NZFOKYGNY4.jpg' className='mt-3 mb-2 imgbusqueda border border-dark'></img>
-                </div>
-                <h5 className="card-title text-center mt-3 mb-2">#5</h5>
-                <h5 className="card-title text-center mt-3 mb-2">Nombre</h5>
-                <div className='font-weight-bold'>
-                  <p className="card-title mb-3">Tipo : </p>
-                  <p className="card-title mb-3">Peso : </p>
-                  <p className="card-title mb-3">Sprites : </p>
-                  <p className="card-title mb-3">Movimientos : </p>
-                </div>
-
-              </div>
-            </div>
-
-          </div>
+      <div className="results">
+        <div className="pokemon-grid">
+          {pokemonList.map((pokemon, index) => (
+            <PokemonCard
+              key={pokemon.id}
+              pokemon={pokemon}
+              color={COLORES[index % COLORES.length]}
+              onSeleccionar={setSelectedPokemon}
+            />
+          ))}
         </div>
 
-
-
-
-
-
-        <div className='d-flex justify-content-between mb-5'>
-          <button onClick={mostrarSiguiente}type="button" className="btn btn-primary">Atras</button>
-          <button onClick={mostrarPrevio}type="button" class="btn btn-primary">Siguiente</button>
-        </div>
-
+        <PokemonDetail pokemon={selectedPokemon} />
       </div>
-    </>
+
+      <Pagination onAtras={mostrarPrevio} onSiguiente={mostrarSiguiente} />
+
+    </div>
   )
 }
 
